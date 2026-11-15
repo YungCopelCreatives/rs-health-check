@@ -1,0 +1,7 @@
+{
+  "name": "rs-health-check",
+  "private": true,
+  "description": "RS Practice Health Check: landing page, questionnaire and result, hosted on Vercel.",
+  "scripts": { "test": "node test/scoring.test.js" },
+  "engines": { "node": ">=18" }
+}

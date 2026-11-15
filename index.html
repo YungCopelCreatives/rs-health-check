@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Practice Health Check | RS Medical Consultancy</title>
+  <meta name="description" content="A free 3-minute self-assessment of your medical practice across six areas, from RS Medical Consultancy.">
+  <link rel="icon" href="/assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@1,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="logo" href="/"><img src="/assets/logo.png" alt="RS Consultancy" width="593" height="115"></a>
+      <a class="header-link" data-cfg="websiteUrl" href="#">rsmedicalconsultancy.com</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="wrap">
+        <p class="eyebrow">RS Practice Health Check™</p>
+        <h1>Your patients get health checks. <em class="accent">Does your practice?</em></h1>
+        <p class="lead">A free, 3-minute self-assessment across six areas of your practice. See your score straight away, then go through it with an RS consultant in a complimentary consultation.</p>
+        <div class="btn-row">
+          <a class="btn btn-primary" data-start href="/check">Start my Health Check</a>
+          <a class="btn btn-ghost" data-cfg="reviewsUrl" href="#" target="_blank" rel="noopener">See what doctors say</a>
+          <a class="btn btn-ghost" data-cfg="brochureUrl" href="#" target="_blank" rel="noopener">View our brochure</a>
+        </div>
+        <p class="meta">No obligation. No commitment. Just an expert second opinion on your practice.</p>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="wrap">
+        <h2>Six areas, one <em class="accent">clear picture</em></h2>
+        <p class="sub">Thirteen short statements, each rated from strongly disagree to strongly agree. Every area carries equal weight in your overall score.</p>
+        <div class="grid">
+          <div class="card"><div class="num">01</div><h3>Business Strategy</h3><p>Direction, planning and whether the practice is meeting its goals.</p></div>
+          <div class="card"><div class="num">02</div><h3>Financial Health</h3><p>Profit, cash position and how reliably claims are paid.</p></div>
+          <div class="card"><div class="num">03</div><h3>Operational Excellence</h3><p>Systems, scheduling and the day-to-day running of the practice.</p></div>
+          <div class="card"><div class="num">04</div><h3>Team &amp; Systems</h3><p>Clear roles, and a practice that runs well without you.</p></div>
+          <div class="card"><div class="num">05</div><h3>Patient Experience</h3><p>Access, communication and acting on patient feedback.</p></div>
+          <div class="card"><div class="num">06</div><h3>Growth Readiness</h3><p>Attracting patients, and the capacity to take the next step.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="wrap">
+        <h2>How it works</h2>
+        <p class="sub">From first tap to a practical plan for your practice.</p>
+        <div class="steps">
+          <div class="step"><h3>Take the Health Check</h3><p>Your details, then 13 quick statements. It takes about three minutes.</p></div>
+          <div class="step"><h3>See your score</h3><p>Your overall practice health score, its classification and a score for each of the six areas.</p></div>
+          <div class="step"><h3>Book your consultation</h3><p>A complimentary session with an RS consultant to go through your results.</p></div>
+          <div class="step"><h3>Receive your report</h3><p>Your RS Practice Health Report™, with recommendations, after the consultation.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block cta-band">
+      <div class="wrap">
+        <h2>Ready when you are</h2>
+        <p class="sub" style="margin-left:auto;margin-right:auto">Three minutes now could show you where your practice's next gains are.</p>
+        <div class="btn-row"><a class="btn btn-primary" data-start href="/check">Start my Health Check</a></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="tag">PRACTICE • PEOPLE • PERFORMANCE</div>
+      <p>RS Medical Consultancy, Cape Town.</p>
+      <p>The Health Check is a self-assessment and not a verified operational or financial audit. Your answers are used only to prepare your results and consultation, in line with POPIA.</p>
+    </div>
+  </footer>
+
+  <script src="/assets/config.js"></script>
+  <script>
+    (function () {
+      var cfg = window.RS_CONFIG || {};
+      document.querySelectorAll("[data-cfg]").forEach(function (a) {
+        var v = cfg[a.getAttribute("data-cfg")];
+        if (v) a.href = v; else a.classList.add("hidden");
+      });
+      // Carry tracking params (rid, src, name, phone, email) from the invite link into the form.
+      var qs = window.location.search;
+      if (qs) document.querySelectorAll("[data-start]").forEach(function (a) { a.href = "/check" + qs; });
+    })();
+  </script>
+</body>
+</html>
