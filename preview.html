@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>WhatsApp Preview | RS Practice Health Check</title>
+  <link rel="icon" href="/assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700&family=Playfair+Display:ital,wght@1,400;1,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/preview.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="logo" href="/"><img src="/assets/logo.png" alt="RS Consultancy" width="900" height="167"></a>
+      <span class="header-link">WhatsApp preview</span>
+    </div>
+  </header>
+
+  <main class="pv">
+    <div class="wrap pv-grid">
+      <section class="pv-intro">
+        <p class="eyebrow">RS Practice Health Check™</p>
+        <h1>The whole Health Check, <em class="accent">over WhatsApp</em></h1>
+        <p>This is how a doctor experiences the funnel on their phone. Tap the buttons as they would: the invite, reviews, brochure, all 13 statements, Confirm or Edit, the score and the booking.</p>
+        <ol class="pv-steps" id="pv-steps">
+          <li data-s="invite">Invite from RS</li>
+          <li data-s="details">Practice details</li>
+          <li data-s="questions">13 statements</li>
+          <li data-s="confirm">Confirm or edit</li>
+          <li data-s="result">Score</li>
+          <li data-s="booked">Consultation booked</li>
+        </ol>
+        <div class="btn-row"><button class="btn btn-ghost" id="restart" type="button">Start again</button></div>
+        <p class="pv-note">Preview only. Live, these messages come from RS's WhatsApp Business number, and every answer is saved to the doctor's record.</p>
+      </section>
+
+      <div class="phone" aria-label="WhatsApp conversation preview">
+        <div class="screen">
+          <div class="wa-top">
+            <span class="back">‹</span>
+            <div class="av"><img src="/assets/favicon.png" alt=""></div>
+            <div class="who"><b>RS Medical Consultancy <span class="verified" title="Business account">✓</span></b><span>Business account</span></div>
+          </div>
+          <div class="chat" id="chat"></div>
+          <form class="compose" id="compose" autocomplete="off">
+            <input id="compose-input" type="text" placeholder="Message" aria-label="Type a message" disabled>
+            <button type="submit" aria-label="Send" disabled id="compose-send">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+            </button>
+          </form>
+          <div class="sheet" id="sheet" hidden>
+            <div class="sheet-panel">
+              <div class="sheet-head"><button type="button" id="sheet-close" aria-label="Close">✕</button><b id="sheet-title"></b></div>
+              <ul class="sheet-list" id="sheet-list"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/assets/config.js"></script>
+  <script src="/assets/scoring.js"></script>
+  <script src="/assets/preview.js"></script>
+</body>
+</html>
