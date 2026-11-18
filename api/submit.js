@@ -28,7 +28,17 @@ module.exports = async function handler(req, res) {
     if (!Number.isInteger(v) || v < 1 || v > 5) return bad(res, `Invalid answer q${n}`);
   }
 
-  const payload = { ...body, receivedAt: new Date().toISOString(), userAgent: req.headers["user-agent"] || "" };
+  // Flat copy of the domain scores, so Make can map them without keys that contain spaces.
+  const dom = (body.scores && body.scores.domains) || {};
+  const flat = {
+    strategy: dom["Business Strategy"],
+    finance: dom["Financial Health"],
+    operations: dom["Operational Excellence"],
+    team: dom["Team & Systems"],
+    patient: dom["Patient Experience"],
+    growth: dom["Growth Readiness"],
+  };
+  const payload = { ...body, flat, receivedAt: new Date().toISOString(), userAgent: req.headers["user-agent"] || "" };
   const url = process.env.MAKE_WEBHOOK_URL;
 
   if (!url) {
