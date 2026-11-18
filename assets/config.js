@@ -4,7 +4,7 @@ window.RS_CONFIG = {
   // Google Business Profile reviews link ("See what doctors say")
   reviewsUrl: "https://share.google/OUZTOJVUBmAHKNHbx",
   // Calendly event link for the complimentary consultation, e.g. https://calendly.com/rs-medical/consultation
-  calendlyUrl: "",
+  calendlyUrl: "https://calendly.com/rsconsultadmin/30min",
   // RS trifold brochure
   brochureUrl: "/assets/rs-brochure.pdf",
   // Public website
