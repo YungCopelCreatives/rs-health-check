@@ -71,6 +71,8 @@ const rowId = (p, title) => {
   assert.strictEqual(a.turnover, "R5–15 million");
   assert.strictEqual(a.answers.q13, 5);
   assert.strictEqual(a.scores.classification, "HEALTHY");
+  assert.strictEqual(a.airtable.childTable, "Assessments");
+  assert.match(a.airtable.doctorBody, /"WhatsApp":"\+27825550142"/);
   // Typed message is saved as a note for RS, and the menu comes back
   await handle(textMsg("Can someone call me tomorrow?"), "Priya Naidoo");
   assert.ok(saved.some(s => s.type === "message" && /call me/.test(s.challenge)));

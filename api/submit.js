@@ -2,6 +2,8 @@
 // Set MAKE_WEBHOOK_URL in Vercel (Project → Settings → Environment Variables).
 // Without it, submissions are accepted and logged only (handy for demos).
 
+const AT = require("./_airtable.js");
+
 const MAX_BYTES = 20000;
 
 function bad(res, msg) {
@@ -39,6 +41,7 @@ module.exports = async function handler(req, res) {
     growth: dom["Growth Readiness"],
   };
   const payload = { ...body, flat, receivedAt: new Date().toISOString(), userAgent: req.headers["user-agent"] || "" };
+  payload.airtable = AT.forAssessment(payload);
   const url = process.env.MAKE_WEBHOOK_URL;
 
   if (!url) {

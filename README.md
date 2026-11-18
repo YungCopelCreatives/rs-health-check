@@ -19,6 +19,28 @@ Vercel env vars: `WA_TOKEN`, `WA_PHONE_NUMBER_ID`, `WA_VERIFY_TOKEN` (any secret
 
 In the Meta app: WhatsApp → Configuration → Webhook. Callback URL `https://rs-health-check.vercel.app/api/whatsapp`, verify token = `WA_VERIFY_TOKEN`, then subscribe to `messages`.
 
+## Airtable CRM
+
+Base `app9s53ZbRzNxBNDI` (drqcele's Airtable) has three tables: **Doctors** (one row per doctor, matched on `WA ID`),
+**Assessments** (one row per completed check, linked to the doctor) and **Messages** (free text sent to the bot).
+`api/_airtable.js` builds the Airtable request bodies; the Make scenario "RS Health Check - 1 Receive submission"
+just forwards them (PATCH Doctors, then POST the linked row). Empty values are skipped, so a WhatsApp visit never
+wipes details typed on the website.
+
+## Outbound invites (`/api/invite`)
+
+The bot can text first, using an approved WhatsApp template. In Airtable, add a **Button** field to Doctors
+("Send invite", action *Open URL*) with this formula, replacing `YOUR_INVITE_KEY`:
+
+```
+"https://rs-health-check.vercel.app/api/invite?k=YOUR_INVITE_KEY&rec=" & RECORD_ID() & "&to=" & ENCODE_URL_COMPONENT({WhatsApp}) & "&name=" & ENCODE_URL_COMPONENT({Doctor})
+```
+
+Set the same key as `INVITE_KEY` in Vercel. Pressing the button opens a confirm page; **Send invite** sends the
+`rs_health_check_invite` template (override with `WA_INVITE_TEMPLATE` / `WA_INVITE_LANG`) and marks the doctor
+*Invited*. The template's quick-reply buttons carry the payloads `START`, `BROCHURE` and `TESTIMONIALS`, which the bot
+already handles. Business-initiated messages need an approved template and a payment method on the WhatsApp account.
+
 ## Placeholders to fill in later
 
 - `assets/config.js`: `reviewsUrl` (Google reviews link) and `calendlyUrl` (booking page). Empty values hide the buttons; the preview uses a stand-in calendar.

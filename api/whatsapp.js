@@ -14,6 +14,7 @@
 const crypto = require("crypto");
 const S = require("../assets/scoring.js");
 const CFG = require("./_config.js");
+const AT = require("./_airtable.js");
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 const QUESTIONS = S.DOMAINS.flatMap(d => d.questions.map(q => ({ ...q, domain: d })));
@@ -141,6 +142,8 @@ async function result(to, name, t, ans) {
   await saveToMake({ to, name, t, answers, r });
 }
 
+const withAirtable = (p, build) => ({ ...p, airtable: build(p) });
+
 async function saveToMake({ to, name, t, answers, r }) {
   const url = process.env.MAKE_WEBHOOK_URL;
   if (!url) return;
@@ -150,12 +153,12 @@ async function saveToMake({ to, name, t, answers, r }) {
   try {
     await fetch(url, {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+      body: JSON.stringify(withAirtable({
         type: "assessment", rid: "", src: "wa", submittedAt: new Date().toISOString(), scoringVersion: r.version,
         doctor: { name: name || "", practice: "", specialty: "", address: "", whatsapp: "+" + to, email: "" },
         turnover: S.TURNOVER[t], answers: a, challenge: "", consent: true,
         scores: { domains, overall: Math.round(r.overall * 100) / 100, classification: r.classification }, flat,
-      }),
+      }, AT.forAssessment)),
     });
   } catch (e) { console.error("Make save failed", e.message); }
 }
@@ -165,7 +168,7 @@ async function note(to, name, body) {
   if (!url) return;
   try {
     await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "message", src: "wa", submittedAt: new Date().toISOString(), doctor: { name: name || "", whatsapp: "+" + to }, challenge: body }) });
+      body: JSON.stringify(withAirtable({ type: "message", src: "wa", submittedAt: new Date().toISOString(), doctor: { name: name || "", whatsapp: "+" + to }, challenge: body }, AT.forMessage)) });
   } catch (e) { console.error("Make note failed", e.message); }
 }
 
