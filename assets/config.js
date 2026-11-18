@@ -2,7 +2,7 @@
 // Leave a value empty ("") and its button is hidden.
 window.RS_CONFIG = {
   // Google Business Profile reviews link ("See what doctors say")
-  reviewsUrl: "",
+  reviewsUrl: "https://share.google/OUZTOJVUBmAHKNHbx",
   // Calendly event link for the complimentary consultation, e.g. https://calendly.com/rs-medical/consultation
   calendlyUrl: "",
   // RS trifold brochure
