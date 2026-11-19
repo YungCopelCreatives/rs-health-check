@@ -7,8 +7,23 @@
 const TTL = 14 * 24 * 60 * 60; // forget an unfinished chat after 14 days
 const mem = new Map();
 
-const url = () => process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || "";
-const token = () => process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || "";
+// Finds the Upstash REST URL and token whatever prefix Vercel gave them
+// (KV_REST_API_URL, UPSTASH_REDIS_REST_URL, or a custom prefix such as STORAGE_KV_REST_API_URL).
+function creds() {
+  const env = process.env;
+  for (const [u, t] of [["KV_REST_API_URL", "KV_REST_API_TOKEN"], ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"]]) {
+    if (env[u] && env[t]) return { url: env[u], token: env[t] };
+    for (const k of Object.keys(env)) {
+      if (k.endsWith("_" + u)) {
+        const tk = k.slice(0, -u.length) + t;
+        if (env[k] && env[tk]) return { url: env[k], token: env[tk] };
+      }
+    }
+  }
+  return { url: "", token: "" };
+}
+const url = () => creds().url;
+const token = () => creds().token;
 const useMemory = () => process.env.RS_STORE === "memory";
 
 const enabled = () => useMemory() || Boolean(url() && token());
