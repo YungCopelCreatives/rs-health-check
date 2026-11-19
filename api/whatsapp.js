@@ -7,14 +7,16 @@
 //   WA_APP_SECRET       (optional) Meta app secret, to check that requests really come from Meta
 //   MAKE_WEBHOOK_URL    Make webhook that saves results (shared with /api/submit)
 //
-// The conversation is stateless: every list row and button carries the answers so far in its id
-// (e.g. "S|2|3443" = turnover option 2, answers 3,4,4,3). So no database is needed for the flow,
-// and a doctor can stop and pick up again from the last message.
+// Order follows RS's questionnaire: about your practice (typed), 13 statements, biggest challenge (typed),
+// turnover, then confirm. The 13 answers and turnover travel in each list row's id
+// (e.g. "S|x|3443" = no turnover yet, answers 3,4,4,3; "S|2|..." = turnover option 2), so a doctor can pick up
+// from any earlier message. Typed answers need memory, kept in Upstash (see api/_store.js).
 
 const crypto = require("crypto");
 const S = require("../assets/scoring.js");
 const CFG = require("./_config.js");
 const AT = require("./_airtable.js");
+const store = require("./_store.js");
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 const QUESTIONS = S.DOMAINS.flatMap(d => d.questions.map(q => ({ ...q, domain: d })));
@@ -71,32 +73,79 @@ function ctaUrl(to, body, label, url) {
 }
 
 // ---------- Copy ----------
-const SCALE_ROWS = [
-  { v: 5, title: "Strongly agree", description: "Consistently" },
-  { v: 4, title: "Agree", description: "Usually" },
-  { v: 3, title: "Partly", description: "Sometimes" },
-  { v: 2, title: "Disagree" },
-  { v: 1, title: "Strongly disagree" },
-];
+const SCALE_ROWS = S.SCALE.slice().reverse().map(x => {
+  const [title, description] = x.label.split(" / ");
+  return { v: x.value, title, description };
+});
 const SHORT = { 1: "Strongly disagree", 2: "Disagree", 3: "Partly", 4: "Agree", 5: "Strongly agree" };
-const first = name => (name || "").trim().split(/\s+/)[0] || "";
+const bare = name => String(name || "").replace(/^\s*(dr\.?|doctor|prof\.?)\s+/i, "").trim();
+const first = name => bare(name).split(/\s+/)[0] || "";
+const key = to => "wa:" + to;
+// WhatsApp list rows are 24 characters at most.
+const turnoverTitle = t => (t.length > 24 ? "Prefer to discuss" : t);
 
 function welcome(to, name) {
   const hi = first(name) ? `Good day, Dr ${first(name)} 👋🏽` : "Good day, Doctor 👋🏽";
   return buttons(to,
     `${hi}\n\nWelcome to the *RS Practice Health Check™*, a complimentary business assessment for doctors in private practice.\n\n` +
-    "13 quick statements across six areas of your practice. It takes about 3 minutes, right here in WhatsApp, and you'll see your score straight away.\n\n" +
+    "A few details about your practice, then 13 quick statements across six areas. It takes about 5 minutes, right here in WhatsApp, and you'll see your score straight away.\n\n" +
     "No obligation. No commitment. Just an expert second opinion on your practice. 🩺",
     [{ id: "START", title: "Start Health Check" }, { id: "BROCHURE", title: "View our brochure" }, { id: "REVIEWS", title: "What doctors say" }],
     "YOUR PATIENTS GET HEALTH CHECKS. DOES YOUR PRACTICE?");
 }
 
-function askTurnover(to) {
+// Step 1: about your practice (typed answers). Skipped if the bot has no memory connected.
+async function startDetails(to, back) {
+  if (!store.enabled()) return startQuestions(to);
+  // A fresh start forgets earlier answers; an edit from the summary keeps the challenge.
+  const st = back ? (await store.get(key(to))) || {} : {};
+  await store.set(key(to), { ...st, step: "name", back });
+  return text(to, (back ? "" : "Wonderful! 🙌 First, a few details about your practice.\n\n") + "What is your name?");
+}
+
+function startQuestions(to) {
+  return text(to, "Thank you. Now 13 short statements. Tap *Choose answer* under each one. 👇").then(() => askQuestion(to, "x", ""));
+}
+
+// After the 13 statements: biggest challenge (typed, optional)
+async function askChallenge(to, ans, back) {
+  if (!store.enabled()) return askTurnover(to, ans);
+  const st = (await store.get(key(to))) || {};
+  await store.set(key(to), { ...st, step: "challenge", ans, ...(back ? { back } : { back: undefined }) });
+  return buttons(to, "What is the single biggest frustration or challenge you currently have with your practice?\n\nType it in a message, or tap Skip.",
+    [{ id: `K|${back ? back.t : "x"}|${ans}`, title: "Skip" }], "Your biggest challenge");
+}
+
+function askTurnover(to, ans) {
   return list(to,
-    "Before we start: roughly what is your practice's annual turnover?\n\nThis stays confidential and doesn't affect your score.",
+    "Last one: what is the approximate annual turnover of your practice?\n\nThis stays confidential and doesn't affect your score.",
     "Choose turnover",
-    S.TURNOVER.map((t, i) => ({ id: `S|${i}|`, title: t })),
-    "Your practice", "Annual turnover");
+    S.TURNOVER.map((t, i) => ({ id: `S|${i}|${ans}`, title: turnoverTitle(t), ...(t.length > 24 ? { description: "During the consultation" } : {}) })),
+    "Practice turnover", "Annual turnover");
+}
+
+// Typed replies while the bot is waiting for one. Returns true if the message was used.
+async function typedAnswer(to, body) {
+  const st = await store.get(key(to));
+  if (!st || !st.step || st.step === "done") return false;
+  const v = body.trim().slice(0, st.step === "challenge" ? 1500 : 120);
+  if (!v) return false;
+  if (st.step === "name") {
+    await store.set(key(to), { ...st, name: v, step: "practice" });
+    await text(to, "And the name of your practice?");
+  } else if (st.step === "practice") {
+    await store.set(key(to), { ...st, practice: v, step: "specialty" });
+    await text(to, "What is your medical speciality?");
+  } else if (st.step === "specialty") {
+    await store.set(key(to), { ...st, specialty: v, step: "done", back: undefined });
+    if (st.back) await summary(to, st.back.t, st.back.ans);
+    else await startQuestions(to);
+  } else if (st.step === "challenge") {
+    await store.set(key(to), { ...st, challenge: v, step: "done", back: undefined });
+    if (st.back) await summary(to, st.back.t, st.back.ans);
+    else await askTurnover(to, st.ans);
+  } else return false;
+  return true;
 }
 
 function askQuestion(to, t, ans) {
@@ -108,18 +157,25 @@ function askQuestion(to, t, ans) {
     `Statement ${q.n} of 13`, `Statement ${q.n}`);
 }
 
-function summary(to, t, ans) {
+async function summary(to, t, ans) {
+  const st = (await store.get(key(to))) || {};
+  const cut = (v, n) => (v && v.length > n ? v.slice(0, n - 1) + "…" : v || "");
+  const about = st.name ? `*About your practice*\n${cut(st.name, 50)}\n${[cut(st.practice, 50), cut(st.specialty, 40)].filter(Boolean).join(" · ")}\n\n` : "";
   const lines = S.DOMAINS.map(d => `*${d.name}*\n` + d.questions.map(q => `${q.n}. ${q.short}: ${SHORT[+ans[q.n - 1]]}`).join("\n")).join("\n\n");
+  const ch = st.challenge ? (st.challenge.length > 90 ? st.challenge.slice(0, 89) + "…" : st.challenge) : "";
+  const challenge = store.enabled() ? `\n\n*Biggest challenge:* ${ch || "Not provided"}` : "";
   return buttons(to,
-    `Here are your answers:\n\n${lines}\n\n*Turnover:* ${S.TURNOVER[t]}\n\nIs this right?`,
+    `${about}${lines}${challenge}\n*Turnover:* ${S.TURNOVER[t]}\n\nIs this right?`,
     [{ id: `C|${t}|${ans}`, title: "Confirm" }, { id: `E|${t}|${ans}`, title: "Edit" }],
     "Check your answers");
 }
 
 const pct = p => (Math.round(p * 10) / 10).toFixed(1).replace(/\.0$/, "") + "%";
-const dot = p => (p >= 85 ? "🟢" : p >= 70 ? "🟢" : p >= 50 ? "🟡" : "🔴");
+const dot = p => ({ EXCELLENT: "🟢", GOOD: "🟢", OPPORTUNITY: "🟡", CRITICAL: "🔴" })[S.band(p)];
 
-async function result(to, name, t, ans) {
+async function result(to, profileName, t, ans) {
+  const st = (await store.get(key(to))) || {};
+  const name = st.name || profileName;
   const answers = {};
   for (let i = 0; i < 13; i++) answers[i + 1] = +ans[i];
   const r = S.score(answers);
@@ -139,12 +195,13 @@ async function result(to, name, t, ans) {
   } else {
     await buttons(to, next, [{ id: "BOOK", title: "Book consultation" }]);
   }
-  await saveToMake({ to, name, t, answers, r });
+  await saveToMake({ to, name, st, t, answers, r });
+  await store.del(key(to));
 }
 
 const withAirtable = (p, build) => ({ ...p, airtable: build(p) });
 
-async function saveToMake({ to, name, t, answers, r }) {
+async function saveToMake({ to, name, st, t, answers, r }) {
   const url = process.env.MAKE_WEBHOOK_URL;
   if (!url) return;
   const a = {}; for (let n = 1; n <= 13; n++) a["q" + n] = answers[n];
@@ -155,8 +212,8 @@ async function saveToMake({ to, name, t, answers, r }) {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(withAirtable({
         type: "assessment", rid: "", src: "wa", submittedAt: new Date().toISOString(), scoringVersion: r.version,
-        doctor: { name: name || "", practice: "", specialty: "", address: "", whatsapp: "+" + to, email: "" },
-        turnover: S.TURNOVER[t], answers: a, challenge: "", consent: true,
+        doctor: { name: name || "", practice: st.practice || "", specialty: st.specialty || "", whatsapp: "+" + to, email: "" },
+        turnover: S.TURNOVER[t], answers: a, challenge: st.challenge || "", consent: true,
         scores: { domains, overall: Math.round(r.overall * 100) / 100, classification: r.classification }, flat,
       }, AT.forAssessment)),
     });
@@ -173,7 +230,7 @@ async function note(to, name, body) {
 }
 
 // ---------- Router ----------
-const valid = (t, ans) => /^[0-3]$/.test(t) && /^[1-5]{0,13}$/.test(ans);
+const valid = (t, ans) => /^[0-3x]$/.test(t) && /^[1-5]{0,13}$/.test(ans);
 
 async function handle(msg, name) {
   const to = msg.from;
@@ -183,17 +240,18 @@ async function handle(msg, name) {
 
   if (!id) {
     const body = (msg.text && msg.text.body) || "";
-    if (/^\s*stop\s*$/i.test(body)) return text(to, "You won't receive further messages from us. Reply START any time if you change your mind.");
+    if (/^\s*stop\s*$/i.test(body)) { await store.del(key(to)); return text(to, "You won't receive further messages from us. Reply START any time if you change your mind."); }
+    if (body && store.enabled() && await typedAnswer(to, body)) return;
     if (body && !/^\s*(hi|hello|hey|start|good\s*(day|morning|afternoon|evening)|health\s*check)\b/i.test(body)) await note(to, name, body);
     return welcome(to, name);
   }
 
   // Template quick-reply payloads from the invite (TESTIMONIALS / BROCHURE / BOOK)
   if (id === "BOOK" && !CFG.calendlyUrl) return text(to, "Thank you! An RS consultant will contact you on this number to arrange your complimentary consultation. 📅");
-  if (id === "START" || id === "BOOK") return askTurnover(to);
+  if (id === "START" || id === "BOOK") return startDetails(to);
   if (id === "BROCHURE") {
     await send(to, { type: "document", document: { link: `${CFG.siteUrl}/assets/rs-brochure.pdf`, filename: "RS Medical Consultancy brochure.pdf", caption: "Who we are, how we help practices, and how to reach us." } });
-    return buttons(to, "Ready to see how your practice is doing? It takes about 3 minutes.", [{ id: "START", title: "Start Health Check" }, { id: "REVIEWS", title: "What doctors say" }]);
+    return buttons(to, "Ready to see how your practice is doing? It takes about 5 minutes.", [{ id: "START", title: "Start Health Check" }, { id: "REVIEWS", title: "What doctors say" }]);
   }
   if (id === "REVIEWS" || id === "TESTIMONIALS") {
     if (CFG.reviewsUrl) await ctaUrl(to, "Here's what doctors we work with say about RS Medical Consultancy ⭐", "Read reviews", CFG.reviewsUrl);
@@ -204,19 +262,28 @@ async function handle(msg, name) {
   const [kind, t, ans = "", x, y] = id.split("|");
   if (!valid(t, ans)) return welcome(to, name);
 
-  if (kind === "S") {
-    if (ans.length === 0 && id.endsWith("|")) {
-      return text(to, "Thank you. Now 13 short statements. Tap *Choose answer* under each one. 👇").then(() => askQuestion(to, t, ans));
-    }
-    return ans.length < 13 ? askQuestion(to, t, ans) : summary(to, t, ans);
+  if (kind === "K") { // skipped the biggest challenge
+    if (ans.length !== 13) return askQuestion(to, "x", ans.slice(0, 12));
+    const st = (await store.get(key(to))) || {};
+    await store.set(key(to), { ...st, challenge: st.back ? st.challenge : "", step: "done", back: undefined });
+    return t === "x" ? askTurnover(to, ans) : summary(to, t, ans);
   }
-  if (ans.length !== 13) return askQuestion(to, t, ans.slice(0, 12));
+  if (kind === "S") {
+    if (ans.length < 13) return askQuestion(to, "x", ans);
+    return t === "x" ? askChallenge(to, ans) : summary(to, t, ans);
+  }
+  if (ans.length !== 13) return askQuestion(to, "x", ans.slice(0, 12));
+  if (t === "x") return askChallenge(to, ans);
   if (kind === "C") return result(to, name, t, ans);
   if (kind === "E") {
     return list(to, "Which area would you like to change?", "Choose area",
-      S.DOMAINS.map((d, i) => ({ id: `ED|${t}|${ans}|${i}`, title: d.name })).concat([{ id: `ET|${t}|${ans}`, title: "Annual turnover" }]),
+      S.DOMAINS.map((d, i) => ({ id: `ED|${t}|${ans}|${i}`, title: d.name }))
+        .concat(store.enabled() ? [{ id: `EX|${t}|${ans}`, title: "About your practice" }, { id: `EC|${t}|${ans}`, title: "Biggest challenge" }] : [])
+        .concat([{ id: `ET|${t}|${ans}`, title: "Practice turnover" }]),
       "Edit an answer", "Areas");
   }
+  if (kind === "EX") return startDetails(to, { t, ans });
+  if (kind === "EC") return askChallenge(to, ans, { t, ans });
   if (kind === "ED") {
     const d = S.DOMAINS[+x];
     if (!d) return summary(to, t, ans);
@@ -239,7 +306,7 @@ async function handle(msg, name) {
   }
   if (kind === "ET") {
     return list(to, "Choose your annual turnover.", "Choose turnover",
-      S.TURNOVER.map((tt, i) => ({ id: `EU|${i}|${ans}`, title: tt })), "Edit an answer", "Annual turnover");
+      S.TURNOVER.map((tt, i) => ({ id: `EU|${i}|${ans}`, title: turnoverTitle(tt), ...(tt.length > 24 ? { description: "During the consultation" } : {}) })), "Edit an answer", "Practice turnover");
   }
   if (kind === "EU") return summary(to, t, ans);
   return welcome(to, name);

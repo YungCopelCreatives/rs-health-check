@@ -21,7 +21,7 @@ module.exports = async function handler(req, res) {
   if (JSON.stringify(body).length > MAX_BYTES) return bad(res, "Too large");
 
   const d = body.doctor || {};
-  for (const k of ["name", "practice", "specialty", "address", "whatsapp", "email"]) {
+  for (const k of ["name", "practice", "specialty", "whatsapp", "email"]) {
     if (typeof d[k] !== "string" || !d[k].trim()) return bad(res, `Missing ${k}`);
   }
   if (body.consent !== true) return bad(res, "Consent required");
@@ -41,7 +41,8 @@ module.exports = async function handler(req, res) {
     growth: dom["Growth Readiness"],
   };
   const payload = { ...body, flat, receivedAt: new Date().toISOString(), userAgent: req.headers["user-agent"] || "" };
-  payload.airtable = AT.forAssessment(payload);
+  // The clickable preview posts here too; keep its sample doctor out of the CRM.
+  if (body.src !== "preview") payload.airtable = AT.forAssessment(payload);
   const url = process.env.MAKE_WEBHOOK_URL;
 
   if (!url) {

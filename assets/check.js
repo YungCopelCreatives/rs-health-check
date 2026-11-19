@@ -3,13 +3,13 @@
   var S = window.RSScoring;
   var CFG = window.RS_CONFIG || {};
   var panel = document.getElementById("panel");
-  var STORE_KEY = "rs-health-check-v1";
+  var STORE_KEY = "rs-health-check-v2";
 
   // ---- State -------------------------------------------------------------
   var params = new URLSearchParams(window.location.search);
   var state = load() || {
     step: 0,
-    details: { name: "", practice: "", specialty: "", address: "", whatsapp: "", email: "" },
+    details: { name: "", practice: "", specialty: "", whatsapp: "", email: "" },
     turnover: "",
     answers: {},
     challenge: "",
@@ -32,8 +32,8 @@
   }
 
   // ---- Steps -------------------------------------------------------------
-  // 0 details, 1 turnover, 2..7 domains, 8 challenge, 9 review, 10 result
-  var D0 = 2, CHALLENGE = 2 + S.DOMAINS.length, REVIEW = CHALLENGE + 1, RESULT = REVIEW + 1;
+  // Same order as RS's questionnaire: 0 about your practice, 1..6 the six areas, 7 biggest challenge, 8 turnover, 9 review, 10 result
+  var D0 = 1, CHALLENGE = D0 + S.DOMAINS.length, TURNOVER = CHALLENGE + 1, REVIEW = TURNOVER + 1, RESULT = REVIEW + 1;
   var editingFromReview = false;
   if (state.step >= RESULT) state.step = REVIEW;
 
@@ -50,10 +50,10 @@
     wrap.classList.remove("hidden");
     var pct = Math.round((step / RESULT) * 100);
     document.getElementById("progress-bar").style.width = pct + "%";
-    var label = step === 0 ? "Your details" : step === 1 ? "Your practice" :
-      step < CHALLENGE ? S.DOMAINS[step - D0].name : step === CHALLENGE ? "Your biggest challenge" : "Check your answers";
+    var label = step === 0 ? "About your practice" : step < CHALLENGE ? S.DOMAINS[step - D0].name :
+      step === CHALLENGE ? "Your biggest challenge" : step === TURNOVER ? "Practice turnover" : "Check your answers";
     document.getElementById("progress-step").textContent = "Step " + (step + 1) + " of " + RESULT + " · " + label;
-    var left = Math.max(1, Math.round(((RESULT - step) / RESULT) * 3));
+    var left = Math.max(1, Math.round(((RESULT - step) / RESULT) * 5));
     document.getElementById("progress-time").textContent = step < REVIEW ? "About " + left + " min left" : "";
   }
 
@@ -82,9 +82,9 @@
     setProgress(state.step);
     var s = state.step;
     if (s === 0) return renderDetails();
-    if (s === 1) return renderTurnover();
     if (s < CHALLENGE) return renderDomain(S.DOMAINS[s - D0]);
     if (s === CHALLENGE) return renderChallenge();
+    if (s === TURNOVER) return renderTurnover();
     if (s === REVIEW) return renderReview();
     return renderResult();
   }
@@ -99,13 +99,13 @@
   function renderDetails() {
     var d = state.details;
     panel.innerHTML =
-      "<h1>Let's start with <em class=\"accent\">you</em></h1>" +
-      '<p class="intro">So we can send your results and prepare for your consultation.</p>' +
+      '<p class="eyebrow">Pre-consultation questionnaire</p>' +
+      "<h1>About your <em class=\"accent\">practice</em></h1>" +
+      '<p class="intro">Please complete the following details about your practice, so we can send your results and prepare for your consultation.</p>' +
       '<form novalidate id="form">' +
-      field("name", "Your name", d.name, "text", "", 'autocomplete="name" placeholder="Dr. Thandi Nkosi"') +
+      field("name", "Doctor name", d.name, "text", "", 'autocomplete="name" placeholder="Dr. Thandi Nkosi"') +
       field("practice", "Practice name", d.practice, "text", "", 'autocomplete="organization"') +
-      field("specialty", "Medical specialty", d.specialty, "text", "", 'list="specialties"') +
-      field("address", "Practice address", d.address, "text", "", 'autocomplete="street-address"') +
+      field("specialty", "Medical speciality", d.specialty, "text", "", 'list="specialties"') +
       field("whatsapp", "WhatsApp number", d.whatsapp, "tel", "We'll send your results here.", 'autocomplete="tel" inputmode="tel" placeholder="082 555 0142"') +
       field("email", "Email", d.email, "email", "", 'autocomplete="email"') +
       '<datalist id="specialties">' + ["General Practitioner", "Paediatrician", "Gynaecologist", "Physician", "Surgeon", "Orthopaedic Surgeon", "Dermatologist", "Psychiatrist", "Cardiologist", "Radiologist", "Anaesthetist", "Dentist", "Physiotherapist"].map(function (x) { return '<option value="' + x + '">'; }).join("") + "</datalist>" +
@@ -148,9 +148,9 @@
 
   function renderTurnover() {
     panel.innerHTML =
-      "<h1>About your <em class=\"accent\">practice</em></h1>" +
-      '<p class="intro">This helps us prepare for your consultation. It does not affect your score.</p>' +
-      '<form novalidate id="form"><div class="question" data-q="turnover"><div class="qt">What is your practice\'s annual turnover?</div>' +
+      "<h1>Practice <em class=\"accent\">turnover</em></h1>" +
+      '<p class="intro">This helps us prepare for your consultation. It stays confidential and does not affect your score.</p>' +
+      '<form novalidate id="form"><div class="question" data-q="turnover"><div class="qt">What is the approximate annual turnover of your practice? (ZAR)</div>' +
       optionsHtml("turnover", S.TURNOVER.map(function (t) { return { value: t, label: t }; }), state.turnover) +
       "</div>" + navHtml() + "</form>";
     bindForm(function (form) {
@@ -196,10 +196,10 @@
   function renderChallenge() {
     panel.innerHTML =
       "<h1>Your biggest <em class=\"accent\">challenge</em></h1>" +
-      '<p class="intro">In a sentence or two, what is the biggest challenge in your practice right now? It does not affect your score, and we will discuss it in your consultation.</p>' +
+      '<p class="intro">What is the single biggest frustration or challenge you currently have with your practice? It does not affect your score, and we will discuss it in your consultation.</p>' +
       '<form novalidate id="form"><div class="field"><label for="f-challenge">Biggest challenge (optional)</label>' +
       '<textarea id="f-challenge" name="challenge" maxlength="1500">' + esc(state.challenge) + "</textarea></div>" +
-      navHtml({ next: "Review my answers" }) + "</form>";
+      navHtml() + "</form>";
     bindForm(function (form) {
       state.challenge = form.elements.challenge.value.trim();
       nextStep();
@@ -217,14 +217,14 @@
       "<h1>Is this <em class=\"accent\">right?</em></h1>" +
       '<p class="intro">Check your answers. Tap Edit to change anything, then confirm to see your score.</p>' +
       group("Your details", 0, [
-        ["Name", d.name], ["Practice", d.practice], ["Specialty", d.specialty],
-        ["Address", d.address], ["WhatsApp", d.whatsapp], ["Email", d.email],
+        ["Doctor", d.name], ["Practice", d.practice], ["Speciality", d.specialty],
+        ["WhatsApp", d.whatsapp], ["Email", d.email],
       ]) +
-      group("Annual turnover", 1, [["Turnover", state.turnover]]) +
       S.DOMAINS.map(function (dom, i) {
         return group(dom.name, D0 + i, dom.questions.map(function (q) { return ["Q" + q.n + " " + q.short, labelFor(state.answers[q.n])]; }));
       }).join("") +
       group("Biggest challenge", CHALLENGE, [["", state.challenge || "Not provided"]]) +
+      group("Practice turnover", TURNOVER, [["Turnover", state.turnover]]) +
       '<form novalidate id="form">' +
       '<label class="consent"><input type="checkbox" name="consent"' + (state.consent ? " checked" : "") + "> " +
       "<span>I agree that RS Medical Consultancy may use these answers to prepare my results and consultation, and contact me about them on WhatsApp and email.</span></label>" +
@@ -272,7 +272,7 @@
       submittedAt: new Date().toISOString(),
       scoringVersion: result.version,
       doctor: {
-        name: d.name, practice: d.practice, specialty: d.specialty, address: d.address,
+        name: d.name, practice: d.practice, specialty: d.specialty,
         whatsapp: normalisePhone(d.whatsapp), email: d.email,
       },
       turnover: state.turnover,
@@ -341,7 +341,7 @@
   }
 
   function barColor(p) {
-    return p >= 85 ? "var(--thriving)" : p >= 70 ? "var(--healthy)" : p >= 50 ? "var(--opportunity)" : "var(--priority)";
+    return S.CLASSIFICATIONS[S.band(p)].color;
   }
 
   function bindForm(onSubmit) {

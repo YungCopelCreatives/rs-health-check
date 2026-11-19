@@ -3,6 +3,7 @@ const assert = require("assert");
 process.env.WA_TOKEN = "test";
 process.env.WA_PHONE_NUMBER_ID = "123";
 process.env.MAKE_WEBHOOK_URL = "https://make.test/hook";
+process.env.RS_STORE = "memory";
 
 const sent = [];
 const saved = [];
@@ -46,38 +47,75 @@ const rowId = (p, title) => {
 };
 
 (async () => {
-  await handle(textMsg("Hi"), "Priya Naidoo");
+  const P = "Priya Naidoo"; // WhatsApp profile name
+  await handle(textMsg("Hi"), P);
   assert.match(last().interactive.body.text, /Dr Priya/);
-  await handle(tap(rowId(last(), "View our brochure")), "Priya Naidoo");
+  await handle(tap(rowId(last(), "View our brochure")), P);
   assert.ok(sent.some(p => p.type === "document"));
-  await handle(tap(rowId(last(), "Start Health Check")), "Priya Naidoo");
-  await handle(tap(rowId(last(), "R5–15 million")), "Priya Naidoo");
+  await handle(tap(rowId(last(), "Start Health Check")), P);
+  // 1. About your practice (typed)
+  assert.match(last().text.body, /What is your name/);
+  await handle(textMsg("Dr Priya Naidoo"), P);
+  assert.match(last().text.body, /name of your practice/);
+  await handle(textMsg("Naidoo Family Practice"), P);
+  assert.match(last().text.body, /speciality/);
+  await handle(textMsg("General Practitioner"), P);
+  // 2. The 13 statements
   const labels = { 5: "Strongly agree", 4: "Agree", 3: "Partly", 2: "Disagree", 1: "Strongly disagree" };
+  assert.match(last().interactive.body.text, /clear business goals for the next 12–24 months/);
+  assert.deepStrictEqual(last().interactive.action.sections[0].rows.map(r => r.description), ["Consistently", "Usually", "Sometimes", "Rarely", "Never"]);
   const ans = [3, 4, 3, 4, 3, 4, 3, 4, 4, 4, 3, 3, 3];
-  for (const v of ans) await handle(tap(rowId(last(), labels[v])), "Priya Naidoo");
-  assert.match(last().interactive.body.text, /Is this right/);
+  for (const v of ans) await handle(tap(rowId(last(), labels[v])), P);
+  // 3. Biggest challenge (typed), then 4. turnover last
+  assert.match(last().interactive.body.text, /single biggest frustration/);
+  await handle(textMsg("Medical aid rejections are hurting our cash flow."), P);
+  assert.match(last().interactive.body.text, /approximate annual turnover/);
+  await handle(tap(rowId(last(), "R5 million – R15 million")), P);
+  const sum = last().interactive.body.text;
+  assert.match(sum, /Is this right/);
+  assert.match(sum, /Naidoo Family Practice · General Practitioner/);
+  assert.match(sum, /Biggest challenge:\* Medical aid rejections/);
   // Edit Q13 to Strongly agree
-  await handle(tap(rowId(last(), "Edit")), "Priya Naidoo");
-  await handle(tap(rowId(last(), "Growth Readiness")), "Priya Naidoo");
-  await handle(tap(rowId(last(), "13.")), "Priya Naidoo");
-  await handle(tap(rowId(last(), "Strongly agree")), "Priya Naidoo");
-  assert.match(last().interactive.body.text, /13\. Ready to expand: Strongly agree/);
-  await handle(tap(rowId(last(), "Confirm")), "Priya Naidoo");
+  await handle(tap(rowId(last(), "Edit")), P);
+  await handle(tap(rowId(last(), "Growth Readiness")), P);
+  await handle(tap(rowId(last(), "13.")), P);
+  await handle(tap(rowId(last(), "Strongly agree")), P);
+  assert.match(last().interactive.body.text, /13\. 3–5 year plan: Strongly agree/);
+  // Edit practice details from the summary
+  await handle(tap(rowId(last(), "Edit")), P);
+  await handle(tap(rowId(last(), "About your practice")), P);
+  await handle(textMsg("Dr P. Naidoo"), P);
+  await handle(textMsg("Naidoo Family Practice"), P);
+  await handle(textMsg("Family Medicine"), P);
+  assert.match(last().interactive.body.text, /Dr P\. Naidoo\nNaidoo Family Practice · Family Medicine/);
+  await handle(tap(rowId(last(), "Confirm")), P);
   const res = sent.filter(p => p.type === "text").pop().text.body;
-  assert.match(res, /Practice Health Score: 72\.2%/);
-  assert.match(res, /HEALTHY/);
+  assert.match(res, /Thank you, Dr P\./);
+  assert.match(res, /Practice Health Score: 72\.3%/);
+  assert.match(res, /GOOD/);
   const a = saved.find(s => s.type === "assessment");
   assert.strictEqual(a.doctor.whatsapp, "+" + FROM);
-  assert.strictEqual(a.turnover, "R5–15 million");
+  assert.strictEqual(a.doctor.name, "Dr P. Naidoo");
+  assert.strictEqual(a.doctor.practice, "Naidoo Family Practice");
+  assert.strictEqual(a.doctor.specialty, "Family Medicine");
+  assert.strictEqual(a.challenge, "Medical aid rejections are hurting our cash flow.");
+  assert.strictEqual(a.turnover, "R5 million – R15 million");
   assert.strictEqual(a.answers.q13, 5);
-  assert.strictEqual(a.scores.classification, "HEALTHY");
+  assert.strictEqual(a.scores.classification, "GOOD");
   assert.strictEqual(a.airtable.childTable, "Assessments");
   assert.match(a.airtable.doctorBody, /"WhatsApp":"\+27825550142"/);
-  // Typed message is saved as a note for RS, and the menu comes back
-  await handle(textMsg("Can someone call me tomorrow?"), "Priya Naidoo");
+  assert.match(a.airtable.doctorBody, /"Practice":"Naidoo Family Practice"/);
+  // After finishing, a typed message is saved as a note for RS, and the menu comes back
+  await handle(textMsg("Can someone call me tomorrow?"), P);
   assert.ok(saved.some(s => s.type === "message" && /call me/.test(s.challenge)));
+  assert.match(last().interactive.body.text, /Welcome/);
+  // Skip the challenge, and pick "Prefer to discuss"
+  await handle(tap("S|x|3333333333333"), P);
+  await handle(tap(rowId(last(), "Skip")), P);
+  await handle(tap(rowId(last(), "Prefer to discuss")), P);
+  assert.match(last().interactive.body.text, /Turnover:\* Prefer to discuss during the consultation/);
   // Tampered ids fall back to the welcome menu
-  await handle(tap("S|9|xyz"), "Priya Naidoo");
+  await handle(tap("S|9|xyz"), P);
   assert.match(last().interactive.body.text, /Welcome/);
   sent.forEach(checkLimits);
   console.log(`WhatsApp flow test passes (${sent.length} messages, all within WhatsApp limits)`);

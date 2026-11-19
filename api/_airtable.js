@@ -43,18 +43,20 @@ function forAssessment(p) {
   const wa = phone(d.whatsapp);
   const tier = S.tier(p.turnover);
   const doctorBody = upsert({
-    Doctor: d.name, WhatsApp: wa, Practice: d.practice, Specialty: d.specialty, Email: d.email, Address: d.address,
+    Doctor: d.name, WhatsApp: wa, Practice: d.practice, Specialty: d.specialty, Email: d.email,
     "Latest score": r1(sc.overall), "Latest band": sc.classification, "Commercial tier": tier, Turnover: p.turnover,
     Source: source(p.src), Consent: p.consent === true || undefined, "Last activity": when,
   });
   const a = p.answers || {};
   const qs = {};
   S.DOMAINS.forEach(dm => dm.questions.forEach(q => { qs[`Q${q.n} ${q.short}`] = a["q" + q.n]; }));
+  let total = 0;
+  for (let n = 1; n <= 13; n++) total += Number(a["q" + n]) || 0;
   const doms = {};
   S.DOMAINS.forEach(dm => { doms[dm.name + " %"] = r1(dom[dm.name]); });
   const childBody = create({
     Assessment: `${d.name || wa} · ${when.slice(0, 10)}`, Submitted: when, Source: source(p.src),
-    "Overall %": r1(sc.overall), Band: sc.classification, "Commercial tier": tier, Turnover: p.turnover,
+    "Total score": total || undefined, "Overall %": r1(sc.overall), Band: sc.classification, "Commercial tier": tier, Turnover: p.turnover,
     "Biggest challenge": p.challenge, ...doms, ...qs, "Scoring version": p.scoringVersion, Ref: p.rid,
   });
   return { doctorBody, childTable: "Assessments", childBody };

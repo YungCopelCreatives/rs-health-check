@@ -11,7 +11,7 @@
   var sheetTitle = document.getElementById("sheet-title");
   var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  var doctor = { name: "Dr. Naidoo", practice: "", specialty: "", address: "", email: "" };
+  var doctor = { name: "", practice: "", specialty: "" };
   var turnover = "";
   var answers = {};
   var challenge = "";
@@ -30,7 +30,7 @@
     if (li) li.classList.add("done");
   }
   function pct(p) { return (Math.round(p * 10) / 10).toFixed(1).replace(/\.0$/, "") + "%"; }
-  function color(p) { return p >= 85 ? "#0fb9b1" : p >= 70 ? "#3fae5a" : p >= 50 ? "#e8a33a" : "#d9534f"; }
+  function color(p) { return S.CLASSIFICATIONS[S.band(p)].hex; }
 
   function day(text, cls) {
     var d = document.createElement("div");
@@ -148,7 +148,13 @@
   }
 
   function answerRows(n) {
-    return [{ rows: S.SCALE.slice().reverse().map(function (s) { return { id: "ANS_Q" + n + "_" + s.value, title: s.label, value: s.value }; }) }];
+    return [{ rows: S.SCALE.slice().reverse().map(function (s) { var p = s.label.split(" / "); return { id: "ANS_Q" + n + "_" + s.value, title: p[0], desc: p[1], value: s.value }; }) }];
+  }
+  // WhatsApp row titles max out at 24 characters, so the long option gets a description.
+  function turnoverRows() {
+    return [{ rows: S.TURNOVER.map(function (t) {
+      return t.length > 24 ? { id: "T", title: "Prefer to discuss", desc: "During the consultation", value: t } : { id: "T", title: t, value: t };
+    }) }];
   }
   function findQ(n) {
     for (var i = 0; i < S.DOMAINS.length; i++) {
@@ -200,35 +206,32 @@
         var br = await rs('<a class="doc" href="' + esc(CFG.brochureUrl || "/assets/rs-brochure.pdf") + '" target="_blank" rel="noopener"><i>PDF</i><span>RS Medical Consultancy brochure.pdf<small>2 pages · PDF</small></span></a>Who we are, how we help practices, and how to reach us.');
         void br;
       }
-      var nxt = await rs("Ready to see how your practice is doing? The Health Check takes about 3 minutes, right here in WhatsApp.", 600);
+      var nxt = await rs("Ready to see how your practice is doing? The Health Check takes about 5 minutes, right here in WhatsApp.", 600);
       var opts = choice === "TESTIMONIALS"
         ? [{ id: "BOOK", label: "Book my assessment" }, { id: "BROCHURE", label: "View our brochure" }]
         : [{ id: "BOOK", label: "Book my assessment" }, { id: "TESTIMONIALS", label: "See what doctors say" }];
       choice = await buttons(nxt, opts);
     }
 
-    // 2. Details, typed in the chat
-    await rs("Wonderful, " + doctor.name + "! 🙌 First, a few details so we can prepare for you.\n\nWhat is the name of your practice?");
+    // 2. About your practice, typed in the chat
+    await rs("Wonderful! 🙌 First, a few details about your practice.\n\nWhat is your name?");
+    doctor.name = await typed("Dr Priya Naidoo");
+    await rs("And the name of your practice?", 500);
     doctor.practice = await typed("Naidoo Family Practice");
-    await rs("And your medical specialty?", 500);
+    await rs("What is your medical speciality?", 500);
     doctor.specialty = await typed("General Practitioner");
-    await rs("What is the practice address?", 500);
-    doctor.address = await typed("12 Kloof Street, Gardens, Cape Town");
-    await rs("Which email should we use for your report?", 500);
-    doctor.email = await typed("dr.naidoo@example.com");
-    var tm = await rs("Last one before we start: roughly what is the practice's annual turnover? This stays confidential and doesn't affect your score.", 600);
-    var tr = await list(tm, "Choose turnover", "Annual turnover", [{ rows: S.TURNOVER.map(function (t) { return { id: "T", title: t }; }) }]);
-    turnover = tr.title;
     step("details");
 
     // 3. The 13 statements
     await rs("Thank you. Now 13 short statements across six areas of your practice. For each one, tap how much you agree. 👇", 700);
     for (var n = 1; n <= 13; n++) await askQuestion(n);
-    var ch = await rs("Lastly, in a sentence, what is the biggest challenge in your practice right now? (Type it, or tap Skip.)", 600);
+    var ch = await rs("What is the single biggest frustration or challenge you currently have with your practice? (Type it, or tap Skip.)", 600);
     var skip = document.createElement("button");
     skip.type = "button"; skip.className = "qr"; skip.textContent = "Skip";
     ch.appendChild(skip); scroll();
     challenge = await typed("Medical aid rejections are hurting our cash flow.", skip);
+    var tm = await rs("Last one: what is the approximate annual turnover of your practice? This stays confidential and doesn't affect your score.", 600);
+    turnover = (await list(tm, "Choose turnover", "Practice turnover", turnoverRows())).value;
     step("questions");
 
     // 4. Summary with Confirm / Edit, loop on edits
@@ -238,11 +241,11 @@
       if (c === "CONFIRM") break;
       var em = await rs("Which part would you like to change?", 500);
       var area = await list(em, "Choose area", "Edit an answer", [{
-        rows: S.DOMAINS.map(function (d) { return { id: "EDIT_D_" + d.key, title: d.name, d: d }; }).concat([{ id: "EDIT_T", title: "Annual turnover" }]),
+        rows: S.DOMAINS.map(function (d) { return { id: "EDIT_D_" + d.key, title: d.name, d: d }; }).concat([{ id: "EDIT_T", title: "Practice turnover" }]),
       }]);
       if (area.id === "EDIT_T") {
         var tm2 = await rs("Choose your annual turnover.", 400);
-        turnover = (await list(tm2, "Choose turnover", "Annual turnover", [{ rows: S.TURNOVER.map(function (t) { return { id: "T", title: t }; }) }])).title;
+        turnover = (await list(tm2, "Choose turnover", "Practice turnover", turnoverRows())).value;
       } else {
         var qm = await rs("Which statement?", 400);
         var qrow = await list(qm, "Choose statement", area.d.name, [{
@@ -261,7 +264,7 @@
     var cls = S.CLASSIFICATIONS[r.classification];
     submitPreview(r);
     var res = await rs(
-      "Thank you, " + doctor.name + ". Here is your result 🩺\n\n" +
+      "Thank you, " + esc(doctor.name) + ". Here is your result 🩺\n\n" +
       "<b>Practice Health Score: " + pct(r.overall) + "</b>  " +
       '<span class="badge" style="background:' + color(r.overall) + '">' + r.classification + "</span>\n" +
       esc(cls.line) +
@@ -279,7 +282,7 @@
     res.querySelector(".bub").appendChild(book); scroll();
     if (CFG.calendlyUrl) {
       var u = new URL(CFG.calendlyUrl);
-      u.searchParams.set("name", doctor.name); u.searchParams.set("email", doctor.email);
+      u.searchParams.set("name", doctor.name);
       book.href = u.toString(); book.target = "_blank"; book.rel = "noopener";
       return;
     }
@@ -293,11 +296,12 @@
 
   function summaryHtml() {
     var lines = ["Thank you, " + esc(doctor.name) + ". Here are your answers:\n"];
-    lines.push("<b>Practice</b>\n" + esc(doctor.practice) + " · " + esc(doctor.specialty) + "\n" + esc(doctor.address) + "\n" + esc(doctor.email) + "\nTurnover: " + esc(turnover) + "\n");
+    lines.push("<b>About your practice</b>\n" + esc(doctor.practice) + " · " + esc(doctor.specialty) + "\n");
     S.DOMAINS.forEach(function (d) {
       lines.push("<b>" + esc(d.name) + "</b>\n" + d.questions.map(function (q) { return "Q" + q.n + " " + esc(q.short) + ": " + label(answers[q.n]); }).join("\n") + "\n");
     });
     lines.push("<b>Biggest challenge</b>\n" + (challenge ? esc(challenge) : "Not provided") + "\n");
+    lines.push("<b>Practice turnover</b>\n" + esc(turnover) + "\n");
     lines.push("Is this right?");
     return lines.join("\n");
   }
@@ -362,7 +366,7 @@
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           rid: "", src: "preview", preview: true, submittedAt: new Date().toISOString(), scoringVersion: r.version,
-          doctor: { name: doctor.name, practice: doctor.practice, specialty: doctor.specialty, address: doctor.address, whatsapp: "+27000000000", email: doctor.email },
+          doctor: { name: doctor.name, practice: doctor.practice, specialty: doctor.specialty, whatsapp: "+27000000000", email: "preview@example.com" },
           turnover: turnover, answers: a, challenge: challenge, consent: true,
           scores: { domains: domains, overall: Math.round(r.overall * 100) / 100, classification: r.classification },
         }),

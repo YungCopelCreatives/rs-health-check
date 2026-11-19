@@ -17,6 +17,10 @@ The full Health Check runs inside WhatsApp: a doctor messages the number, gets t
 
 Vercel env vars: `WA_TOKEN`, `WA_PHONE_NUMBER_ID`, `WA_VERIFY_TOKEN` (any secret string, also pasted into Meta's webhook settings). Optional: `CALENDLY_URL`, `REVIEWS_URL`. Leave `WA_APP_SECRET` unset for now.
 
+The bot asks RS's questions in RS's order: doctor name, practice name and speciality (typed), the 13 statements,
+biggest challenge (typed, can skip), then turnover. Typed answers need a little memory: in Vercel, Storage → Upstash
+for Redis (free) → connect to this project. Without it the bot skips the typed questions.
+
 In the Meta app: WhatsApp → Configuration → Webhook. Callback URL `https://rs-health-check.vercel.app/api/whatsapp`, verify token = `WA_VERIFY_TOKEN`, then subscribe to `messages`.
 
 ## Airtable CRM
@@ -45,5 +49,5 @@ already handles. Business-initiated messages need an approved template and a pay
 
 - `assets/config.js`: `reviewsUrl` (Google reviews link) and `calendlyUrl` (booking page). Empty values hide the buttons; the preview uses a stand-in calendar.
 - Vercel env var `MAKE_WEBHOOK_URL`, once the Make scenario exists.
-- The 13 statements in `assets/scoring.js` are drafts until RS confirms the wording.
+- Statements, scale, bands and scoring follow RS's Practice Health Check questionnaire and scoring guide (v2.0, Nov 2026).
 - Live WhatsApp: Meta app, test number, then RS's own number after business verification.

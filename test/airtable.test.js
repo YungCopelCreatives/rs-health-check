@@ -22,8 +22,9 @@ assert.strictEqual(d.records[0].fields.Source, "Website");
 const c = JSON.parse(web.childBody);
 assert.strictEqual(web.childTable, "Assessments");
 assert.deepStrictEqual(c.records[0].fields.Doctor, [AT.DOCTOR_ID]);
-assert.strictEqual(c.records[0].fields["Q13 Ready to expand"], 4);
+assert.strictEqual(c.records[0].fields["Q13 3–5 year plan"], 4);
 assert.strictEqual(c.records[0].fields["Team & Systems %"], 80);
+assert.strictEqual(c.records[0].fields["Total score"], 52);
 assert.strictEqual(Object.keys(c.records[0].fields).filter(k => /^Q\d+ /.test(k)).length, 13);
 
 // A WhatsApp visit must not blank out practice details typed on the website
