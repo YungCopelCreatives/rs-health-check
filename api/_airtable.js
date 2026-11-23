@@ -82,4 +82,14 @@ function forInvite({ recordId, whatsapp, when }) {
   };
 }
 
-module.exports = { phone, forAssessment, forMessage, forInvite, DOCTOR_ID };
+// Consultation booked (or cancelled) on Calendly: mark the doctor and log it under Messages.
+function forBooking({ whatsapp, name, email, status, note, when }) {
+  const t = when || new Date().toISOString();
+  return {
+    doctorBody: upsert({ Doctor: name, WhatsApp: phone(whatsapp), Email: email, Status: status, "Last activity": t }),
+    childTable: "Messages",
+    childBody: create({ Message: note, Received: t }),
+  };
+}
+
+module.exports = { phone, forAssessment, forMessage, forInvite, forBooking, DOCTOR_ID };

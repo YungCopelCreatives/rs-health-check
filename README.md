@@ -51,3 +51,9 @@ already handles. Business-initiated messages need an approved template and a pay
 - Vercel env var `MAKE_WEBHOOK_URL`, once the Make scenario exists.
 - Statements, scale, bands and scoring follow RS's Practice Health Check questionnaire and scoring guide (v2.0, Nov 2026).
 - Live WhatsApp: Meta app, test number, then RS's own number after business verification.
+
+## Reviews, About RS and booking thank-you
+
+- **What doctors say**: the bot shows the first three Google reviews right in the chat, and links to `/reviews` for the rest. Paste the reviews into `assets/reviews.js` (copied exactly from Google). While that list is empty, the bot sends the Google link.
+- **About RS**: the interactive page at `/about` replaces the PDF brochure in the chat. Change `waNumber` in `assets/config.js` to RS's own number at launch.
+- **Booking thank-you**: `api/calendly.js` thanks the doctor on WhatsApp when they book (and sends a rebooking link when they cancel), and marks them in Airtable. Add `CALENDLY_TOKEN` (Calendly → Integrations → API and webhooks) in Vercel, then tap **Connect Calendly** on the status page. Calendly webhooks need a paid plan (Standard) or the free trial. The thank-you is a normal WhatsApp message, so it only goes out within 24 hours of the doctor's last message, which covers someone who books straight after the Health Check.

@@ -70,7 +70,7 @@ module.exports = async function handler(req, res) {
     return page(res, 200, "Send WhatsApp invite?",
       `<p>Send the RS Practice Health Check invite to <span class="n">${esc(name || "this doctor")}</span> on <span class="n">+${esc(to)}</span>?</p>
 <form method="post"><input type="hidden" name="k" value="${esc(p.k)}"><input type="hidden" name="rec" value="${esc(rec)}"><input type="hidden" name="to" value="${esc(to)}"><input type="hidden" name="name" value="${esc(name)}"><button>Send invite</button></form>
-<p class="muted">They'll get one WhatsApp message with buttons to start the Health Check, see the brochure or read reviews.</p>`);
+<p class="muted">They'll get one WhatsApp message with buttons to start the Health Check, learn about RS or read reviews.</p>`);
   }
   if (req.method !== "POST") return res.status(405).end();
 

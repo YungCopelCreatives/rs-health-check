@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>About RS Medical Consultancy</title>
+  <meta name="description" content="Strategic growth for modern healthcare practices: strategy, operations and growth advisory for doctors in private practice.">
+  <meta property="og:title" content="About RS Medical Consultancy">
+  <meta property="og:description" content="Strategy, operations and growth advisory for doctors in private practice.">
+  <meta property="og:image" content="/assets/logo.png">
+  <link rel="icon" href="/assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/style.css">
+  <style>
+    :root { --obsidian: #0d1416; --obsidian-2: #162023; }
+    body { background: #fff; padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+    .ab-hero { background: var(--obsidian); color: #dfe7e8; padding: 28px 0 40px; position: relative; overflow: hidden; }
+    .ab-hero::after { content: ""; position: absolute; right: -90px; top: -60px; width: 260px; height: 260px; border: 1px solid var(--teal); border-radius: 44px; opacity: .45; transform: rotate(12deg); }
+    .ab-hero img.logo { height: 30px; width: auto; filter: brightness(0) invert(1); opacity: .95; margin-bottom: 34px; }
+    .ab-hero .eyebrow { color: var(--teal); margin-bottom: 12px; }
+    .ab-hero h1 { color: #fff; font-size: clamp(32px, 8vw, 52px); line-height: 1.08; margin: 0 0 14px; max-width: 14ch; }
+    .ab-hero p { margin: 0; max-width: 46ch; color: #b9c6c8; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+    .chip { border: 1px solid rgba(255,255,255,.18); border-radius: 999px; padding: 6px 12px; font-size: 13px; color: #dfe7e8; }
+
+    .sec { padding: 40px 0 8px; }
+    .sec h2 { font-size: clamp(24px, 6vw, 34px); margin: 0 0 6px; line-height: 1.15; }
+    .sec .sub { color: var(--muted); margin: 0 0 20px; font-size: 16px; }
+
+    /* Services: tap a tab, the card swaps */
+    .tabs { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -20px 16px; padding: 0 20px; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab { flex: none; border: 1px solid #dfe3e6; background: #fff; color: var(--text); border-radius: 999px; padding: 10px 16px; font: 600 14px/1 var(--sans); cursor: pointer; }
+    .tab[aria-selected="true"] { background: var(--obsidian); border-color: var(--obsidian); color: #fff; }
+    .panel { background: var(--ink-2); border-radius: 24px; padding: 22px; animation: rise .25s ease; }
+    .panel[hidden] { display: none; }
+    .panel .num { font: 700 13px/1 var(--head); color: var(--teal-text); letter-spacing: .1em; }
+    .panel h3 { font-size: 22px; margin: 8px 0 8px; }
+    .panel p { margin: 0 0 14px; }
+    .panel ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+    .panel li { background: #fff; border-radius: 16px; padding: 14px 16px; }
+    .panel li b { display: block; color: var(--text); font-family: var(--head); font-size: 15px; margin-bottom: 2px; }
+    .panel li span { font-size: 15px; color: var(--text-2); }
+    @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+    /* How it works */
+    .hws { list-style: none; margin: 0; padding: 0; position: relative; }
+    .hws::before { content: ""; position: absolute; left: 19px; top: 8px; bottom: 8px; width: 2px; background: var(--ink-3); }
+    .hw { position: relative; padding: 0 0 22px 56px; }
+    .hw .dot { position: absolute; left: 0; top: 0; width: 40px; height: 40px; border-radius: 50%; background: #fff; border: 2px solid var(--teal); display: grid; place-items: center; font: 700 15px/1 var(--head); color: var(--text); }
+    .hw h3 { margin: 6px 0 2px; font-size: 17px; }
+    .hw p { margin: 0; font-size: 15px; color: var(--text-2); }
+
+    /* Reviews */
+    .rv-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+    .rv-head .big { font: 700 34px/1 var(--head); color: var(--text); }
+    .stars { color: #f4b400; letter-spacing: 2px; }
+    .rv-track { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -20px; padding: 0 20px 6px; scrollbar-width: none; }
+    .rv-track::-webkit-scrollbar { display: none; }
+    .rv { flex: 0 0 84%; scroll-snap-align: start; background: var(--ink-2); border-radius: 20px; padding: 18px; }
+    .rv p { margin: 8px 0 12px; font-size: 15px; }
+    .rv .who { font-size: 14px; color: var(--muted); }
+    .rv .who b { color: var(--text); }
+
+    /* FAQ */
+    details { border-bottom: 1px solid var(--line); padding: 16px 0; }
+    summary { font: 600 16px/1.4 var(--head); color: var(--text); cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: "+"; color: var(--teal-text); font-size: 22px; line-height: 1; }
+    details[open] summary::after { content: "–"; }
+    details p { margin: 10px 0 0; font-size: 15px; }
+
+    /* Contact */
+    .contact { display: grid; gap: 10px; }
+    .contact a { display: flex; align-items: center; gap: 14px; background: var(--ink-2); border-radius: 18px; padding: 14px 16px; text-decoration: none; color: var(--text); font-weight: 500; }
+    .contact a small { display: block; color: var(--muted); font-weight: 400; font-size: 13px; }
+    .contact .ic { width: 36px; height: 36px; border-radius: 12px; background: #fff; display: grid; place-items: center; flex: none; }
+    .contact svg { width: 18px; height: 18px; stroke: var(--teal-text); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    footer.ab { color: var(--muted); font-size: 13px; padding: 28px 0 8px; }
+
+    /* Sticky actions */
+    .dock { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,.96); backdrop-filter: blur(8px); border-top: 1px solid var(--line); padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); display: flex; gap: 10px; z-index: 5; }
+    .dock .btn { flex: 1; padding: 15px 10px; font-size: 15px; }
+    .dock .btn[hidden] { display: none; }
+    .wrap { padding: 0 20px; max-width: 720px; }
+  </style>
+</head>
+<body>
+  <header class="ab-hero">
+    <div class="wrap">
+      <img class="logo" src="/assets/logo.png" alt="RS Medical Consultancy" width="900" height="167">
+      <p class="eyebrow">RS Medical Consultancy</p>
+      <h1>Strategic growth for modern healthcare practices</h1>
+      <p>A specialist partner for medical practices seeking clearer direction, stronger management systems and more efficient delivery of healthcare services.</p>
+      <div class="chips"><span class="chip">Strategy</span><span class="chip">Operations</span><span class="chip">Growth</span></div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="sec" id="services">
+      <h2>How we help</h2>
+      <p class="sub">Tap an area to see what it covers.</p>
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" aria-selected="true" aria-controls="p1" id="t1">Strategic advisory</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="p2" id="t2">What we build</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="p3" id="t3">Practice management</button>
+        <button class="tab" role="tab" aria-selected="false" aria-controls="p4" id="t4">Growth support</button>
+      </div>
+      <div class="panel" role="tabpanel" id="p1" aria-labelledby="t1">
+        <div class="num">01</div>
+        <h3>Strategic advisory</h3>
+        <p>Clear direction for where your practice goes next.</p>
+        <ul>
+          <li><b>Practice strategy and business planning</b><span>Define direction, priorities and a practical path forward.</span></li>
+          <li><b>Healthcare management advisory</b><span>Strengthen the systems and decisions that support better practice performance.</span></li>
+        </ul>
+      </div>
+      <div class="panel" role="tabpanel" id="p2" aria-labelledby="t2" hidden>
+        <div class="num">02</div>
+        <h3>What we help build</h3>
+        <p>The plans and habits that turn ambition into results.</p>
+        <ul>
+          <li><b>Operational planning</b><span>Translate ambition into clear planning, workflows and execution.</span></li>
+          <li><b>Performance improvement</b><span>Create more efficient delivery of healthcare services.</span></li>
+          <li><b>Patient-focused growth</b><span>Support sustainable growth and development for practices.</span></li>
+        </ul>
+      </div>
+      <div class="panel" role="tabpanel" id="p3" aria-labelledby="t3" hidden>
+        <div class="num">03</div>
+        <h3>Practice management</h3>
+        <p>Strengthen the management systems and decisions that keep a practice performing with clarity and control.</p>
+        <ul>
+          <li><b>Management advisory</b><span>An experienced second opinion on the decisions that matter.</span></li>
+          <li><b>Operational performance</b><span>Fewer delays, less duplication, smoother days.</span></li>
+          <li><b>Practice development</b><span>A clearer operating model for the next stage of your practice.</span></li>
+        </ul>
+      </div>
+      <div class="panel" role="tabpanel" id="p4" aria-labelledby="t4" hidden>
+        <div class="num">04</div>
+        <h3>Growth and development support</h3>
+        <p>Navigate growth with focused, informed strategy, supporting sustainable, patient-focused practice development.</p>
+        <ul>
+          <li><b>Global consultancy</b><span>For healthcare organisations and professionals.</span></li>
+          <li><b>Complimentary consultation</b><span>Start with a free conversation about your practice. Terms and conditions apply.</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="sec" id="how">
+      <h2>How it starts</h2>
+      <p class="sub">The RS Practice Health Check™ takes about 5 minutes, right in WhatsApp.</p>
+      <ol class="hws">
+        <li class="hw"><span class="dot">1</span><h3>Answer 13 short statements</h3><p>Across strategy, finance, operations, team, patient experience and growth.</p></li>
+        <li class="hw"><span class="dot">2</span><h3>See your score straight away</h3><p>Your Practice Health Score and how each area compares.</p></li>
+        <li class="hw"><span class="dot">3</span><h3>Book a complimentary consultation</h3><p>An RS consultant walks through your results with you.</p></li>
+        <li class="hw"><span class="dot">4</span><h3>Receive your RS Practice Health Report™</h3><p>With clear, practical recommendations for your practice.</p></li>
+      </ol>
+    </section>
+
+    <section class="sec" id="reviews" hidden>
+      <h2>What doctors say</h2>
+      <div class="rv-head"><span class="big" id="rv-rating"></span><span class="stars">★★★★★</span><span class="sub" id="rv-count" style="margin:0"></span></div>
+      <div class="rv-track" id="rv-track"></div>
+      <p style="margin:14px 0 0"><a id="rv-all" href="/reviews">See all reviews</a></p>
+    </section>
+
+    <section class="sec" id="faq">
+      <h2>Good to know</h2>
+      <details><summary>Who is RS for?</summary><p>Doctors and clinics in private practice who want clearer direction, stronger systems and sustainable growth.</p></details>
+      <details><summary>What does the Health Check cost?</summary><p>Nothing. The Health Check and the first consultation are complimentary, with no obligation.</p></details>
+      <details><summary>Is my information kept private?</summary><p>Yes. Your answers are only used to prepare your results and consultation. We never ask for patient information. <a href="/privacy">Privacy policy</a></p></details>
+    </section>
+
+    <section class="sec" id="contact">
+      <h2>Contact us</h2>
+      <div class="contact">
+        <a href="tel:+27746376861"><span class="ic"><svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg></span><span>+27 (0) 74 637 6861<small>Call us</small></span></a>
+        <a href="mailto:ree@rsmedicalconsultancy.com"><span class="ic"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg></span><span>ree@rsmedicalconsultancy.com<small>Email us</small></span></a>
+        <a href="https://www.rsmedicalconsultancy.com" target="_blank" rel="noopener"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg></span><span>rsmedicalconsultancy.com<small>Visit our website</small></span></a>
+      </div>
+    </section>
+    <footer class="ab">RS Medical Consultancy (Pty) Ltd · Cape Town · Practice • People • Performance</footer>
+  </main>
+
+  <nav class="dock">
+    <a class="btn btn-primary" id="go-check" href="#">Start Health Check</a>
+    <a class="btn btn-ghost" id="go-book" href="#" target="_blank" rel="noopener">Book consultation</a>
+  </nav>
+
+  <script src="/assets/config.js"></script>
+  <script src="/assets/reviews.js"></script>
+  <script>
+    // Tabs
+    const tabs = [...document.querySelectorAll(".tab")];
+    tabs.forEach(t => t.addEventListener("click", () => {
+      tabs.forEach(x => { x.setAttribute("aria-selected", x === t); document.getElementById(x.getAttribute("aria-controls")).hidden = x !== t; });
+      t.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+    }));
+
+    // Actions: back to the WhatsApp chat, and booking
+    const C = window.RS_CONFIG || {};
+    const check = document.getElementById("go-check");
+    if (C.waNumber) check.href = `https://wa.me/${C.waNumber}?text=${encodeURIComponent("Start Health Check")}`;
+    else check.href = "/check";
+    const book = document.getElementById("go-book");
+    if (C.calendlyUrl) book.href = C.calendlyUrl; else book.hidden = true;
+
+    // Reviews
+    const R = window.RS_REVIEWS || { reviews: [] };
+    if (R.reviews.length) {
+      document.getElementById("reviews").hidden = false;
+      document.getElementById("rv-rating").textContent = R.rating ? R.rating.toFixed(1) : "";
+      document.getElementById("rv-count").textContent = R.count ? `${R.count} Google reviews` : "Google reviews";
+      const esc = s => String(s || "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+      document.getElementById("rv-track").innerHTML = R.reviews.slice(0, 8).map(r =>
+        `<article class="rv"><span class="stars">${"★".repeat(r.stars || 5)}</span><p>“${esc(r.text)}”</p><div class="who"><b>${esc(r.name)}</b>${r.role ? " · " + esc(r.role) : ""}</div></article>`).join("");
+    }
+  </script>
+</body>
+</html>

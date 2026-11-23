@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>What doctors say | RS Medical Consultancy</title>
+  <link rel="icon" href="/assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/style.css">
+  <style>
+    body { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+    .wrap { max-width: 720px; padding: 0 20px; }
+    .top { background: #0d1416; color: #b9c6c8; padding: 28px 0 32px; }
+    .top img { height: 28px; width: auto; filter: brightness(0) invert(1); margin-bottom: 26px; }
+    .top h1 { color: #fff; font-size: clamp(30px, 8vw, 44px); margin: 0 0 12px; }
+    .score { display: flex; align-items: center; gap: 12px; }
+    .score .big { font: 700 40px/1 var(--head); color: #fff; }
+    .stars { color: #f4b400; letter-spacing: 2px; }
+    .list { display: grid; gap: 12px; padding: 24px 0; }
+    .rv { background: var(--ink-2); border-radius: 20px; padding: 18px; }
+    .rv header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .av { width: 40px; height: 40px; border-radius: 50%; background: var(--teal-soft); color: var(--teal-text); display: grid; place-items: center; font: 700 16px/1 var(--head); flex: none; }
+    .rv b { color: var(--text); display: block; font-size: 15px; }
+    .rv small { color: var(--muted); font-size: 13px; }
+    .rv p { margin: 6px 0 0; font-size: 16px; }
+    .empty { color: var(--muted); padding: 24px 0; }
+    .dock { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,.96); backdrop-filter: blur(8px); border-top: 1px solid var(--line); padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); display: flex; gap: 10px; }
+    .dock .btn { flex: 1; padding: 15px 10px; font-size: 15px; }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <img src="/assets/logo.png" alt="RS Medical Consultancy" width="900" height="167">
+      <h1>What doctors say</h1>
+      <div class="score"><span class="big" id="rating"></span><div><div class="stars">★★★★★</div><div id="count">Google reviews</div></div></div>
+    </div>
+  </header>
+  <main class="wrap">
+    <div class="list" id="list"></div>
+  </main>
+  <nav class="dock">
+    <a class="btn btn-primary" id="go-check" href="/check">Start Health Check</a>
+    <a class="btn btn-ghost" id="go-google" href="#" target="_blank" rel="noopener">View on Google</a>
+  </nav>
+  <script src="/assets/config.js"></script>
+  <script src="/assets/reviews.js"></script>
+  <script>
+    const R = window.RS_REVIEWS || { reviews: [] }, C = window.RS_CONFIG || {};
+    const esc = s => String(s || "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    document.getElementById("rating").textContent = R.rating ? R.rating.toFixed(1) : "";
+    if (R.count) document.getElementById("count").textContent = `${R.count} Google reviews`;
+    document.getElementById("go-google").href = R.googleUrl || C.reviewsUrl;
+    if (C.waNumber) document.getElementById("go-check").href = `https://wa.me/${C.waNumber}?text=${encodeURIComponent("Start Health Check")}`;
+    const initials = n => String(n || "").replace(/^dr\.?\s+/i, "").split(/\s+/).map(x => x[0]).join("").slice(0, 2).toUpperCase();
+    document.getElementById("list").innerHTML = R.reviews.length
+      ? R.reviews.map(r => `<article class="rv"><header><span class="av">${esc(initials(r.name))}</span><div><b>${esc(r.name)}</b><small>${esc([r.role, r.when].filter(Boolean).join(" · "))}</small></div></header><div class="stars">${"★".repeat(r.stars || 5)}</div><p>${esc(r.text)}</p></article>`).join("")
+      : `<p class="empty">Our Google reviews will appear here. <a href="${esc(R.googleUrl)}">Read them on Google</a>.</p>`;
+  </script>
+</body>
+</html>

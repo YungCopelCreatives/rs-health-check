@@ -91,8 +91,19 @@ module.exports = async function handler(req, res) {
     if (se) items.push(row(false, `Last send error (${ago(se.at)})`, se.error));
   }
 
+  // Calendly booking thank-you
+  let calForm = "";
+  const calToken = (process.env.CALENDLY_TOKEN || "").trim();
+  if (!calToken) items.push(row(false, "Calendly booking thank-you", "Add CALENDLY_TOKEN in Vercel to switch it on"));
+  else {
+    const [cs, cb] = memOk ? await Promise.all([store.get("diag:calendlySetup"), store.get("diag:calendly")]) : [null, null];
+    items.push(row(!!cs, "Calendly booking thank-you", cs ? `Connected ${ago(cs.at)}` : "Token saved. Tap the button below to connect"));
+    if (cb) items.push(row(cb.matched && cb.whatsappSent, `Last booking event (${ago(cb.at)})`, `${cb.status} · ${cb.matched ? (cb.whatsappSent ? "thank-you sent on WhatsApp" : "WhatsApp message failed (see send error)") : "couldn't match it to a WhatsApp number"}`));
+    calForm = `<form method="get" action="/api/calendly"><input type="hidden" name="k" value="${esc(q.k)}"><input type="hidden" name="setup" value="1"><button style="background:#fff;border:1px solid #ccc;border-radius:999px;padding:14px 22px;font-size:16px;font-weight:600;margin-top:12px">${cs ? "Reconnect Calendly" : "Connect Calendly"}</button></form>`;
+  }
+
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   return res.status(200).send(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bot status</title>
 <style>body{font-family:system-ui,sans-serif;margin:0;padding:16px;background:#fff;color:#222}h1{font-size:20px}ul{list-style:none;padding:0}li{border:1px solid #e3e6e8;border-radius:12px;padding:12px;margin:8px 0}li span{display:block;color:#555;font-size:14px;margin-top:4px;word-break:break-word}.bad{border-color:#f0b4b2;background:#fdf3f3}</style>
-<h1>RS WhatsApp bot status</h1><ul>${items.join("")}</ul>${fixForm}<p style="color:#777;font-size:13px">Checked ${new Date().toISOString()}. Refresh after sending "Hi".</p>`);
+<h1>RS WhatsApp bot status</h1><ul>${items.join("")}</ul>${fixForm}${calForm}<p style="color:#777;font-size:13px">Checked ${new Date().toISOString()}. Refresh after sending "Hi".</p>`);
 };

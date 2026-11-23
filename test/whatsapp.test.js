@@ -50,8 +50,10 @@ const rowId = (p, title) => {
   const P = "Priya Naidoo"; // WhatsApp profile name
   await handle(textMsg("Hi"), P);
   assert.match(last().interactive.body.text, /Dr Priya/);
-  await handle(tap(rowId(last(), "View our brochure")), P);
-  assert.ok(sent.some(p => p.type === "document"));
+  await handle(tap(rowId(last(), "About RS")), P);
+  assert.ok(sent.some(p => p.interactive && p.interactive.type === "cta_url" && /\/about$/.test(p.interactive.action.parameters.url)));
+  await handle(tap(rowId(last(), "What doctors say")), P);
+  assert.ok(sent.some(p => p.interactive && p.interactive.type === "cta_url" && p.interactive.action.parameters.display_text === "Read reviews"));
   await handle(tap(rowId(last(), "Start Health Check")), P);
   // 1. About your practice (typed)
   assert.match(last().text.body, /What is your name/);

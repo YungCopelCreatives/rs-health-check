@@ -17,6 +17,7 @@ const S = require("../assets/scoring.js");
 const CFG = require("./_config.js");
 const AT = require("./_airtable.js");
 const store = require("./_store.js");
+const REVIEWS = require("../assets/reviews.js");
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 const QUESTIONS = S.DOMAINS.flatMap(d => d.questions.map(q => ({ ...q, domain: d })));
@@ -39,9 +40,10 @@ async function send(to, payload) {
     const err = (await r.text()).slice(0, 500);
     console.error("WA send failed", r.status, err);
     await store.set("diag:sendError", { at: new Date().toISOString(), status: r.status, error: err });
-  } else {
-    await store.set("diag:sendOk", { at: new Date().toISOString() });
+    return false;
   }
+  await store.set("diag:sendOk", { at: new Date().toISOString() });
+  return true;
 }
 
 const text = (to, body) => send(to, { type: "text", text: { body, preview_url: true } });
@@ -100,7 +102,7 @@ function welcome(to, name) {
     `${hi}\n\nWelcome to the *RS Practice Health Check™*, a complimentary business assessment for doctors in private practice.\n\n` +
     "A few details about your practice, then 13 quick statements across six areas. It takes about 5 minutes, right here in WhatsApp, and you'll see your score straight away.\n\n" +
     "No obligation. No commitment. Just an expert second opinion on your practice. 🩺",
-    [{ id: "START", title: "Start Health Check" }, { id: "BROCHURE", title: "View our brochure" }, { id: "REVIEWS", title: "What doctors say" }],
+    [{ id: "START", title: "Start Health Check" }, { id: "BROCHURE", title: "About RS" }, { id: "REVIEWS", title: "What doctors say" }],
     "YOUR PATIENTS GET HEALTH CHECKS. DOES YOUR PRACTICE?");
 }
 
@@ -239,6 +241,19 @@ async function note(to, name, body) {
   } catch (e) { console.error("Make note failed", e.message); }
 }
 
+// Google reviews shown right in the chat, so nobody has to dig through Google Maps.
+async function reviews(to) {
+  const list = REVIEWS.reviews || [];
+  if (!list.length) return ctaUrl(to, "Here's what doctors we work with say about RS Medical Consultancy ⭐", "Read reviews", CFG.reviewsUrl);
+  const head = REVIEWS.rating ? `*${REVIEWS.rating.toFixed(1)} ⭐ on Google*${REVIEWS.count ? ` from ${REVIEWS.count} reviews` : ""}` : "*What doctors say about RS* ⭐";
+  const quote = r => {
+    const t = String(r.text || "").trim();
+    return `${"⭐".repeat(r.stars || 5)}\n_"${t.length > 260 ? t.slice(0, 257).replace(/\s+\S*$/, "") + "…" : t}"_\n— ${r.name}${r.role ? ", " + r.role : ""}`;
+  };
+  await text(to, `${head}\n\n${list.slice(0, 3).map(quote).join("\n\n")}`);
+  if (list.length > 3) await ctaUrl(to, `${list.length - 3} more review${list.length - 3 > 1 ? "s" : ""} from doctors.`, "See all reviews", `${CFG.siteUrl}/reviews`);
+}
+
 // ---------- Router ----------
 const valid = (t, ans) => /^[0-3x]$/.test(t) && /^[1-5]{0,13}$/.test(ans);
 
@@ -260,13 +275,14 @@ async function handle(msg, name) {
   if (id === "BOOK" && !CFG.calendlyUrl) return text(to, "Thank you! An RS consultant will contact you on this number to arrange your complimentary consultation. 📅");
   if (id === "START" || id === "BOOK") return startDetails(to);
   if (id === "BROCHURE") {
-    await send(to, { type: "document", document: { link: `${CFG.siteUrl}/assets/rs-brochure.pdf`, filename: "RS Medical Consultancy brochure.pdf", caption: "Who we are, how we help practices, and how to reach us." } });
+    await ctaUrl(to,
+      "*About RS Medical Consultancy* 🩺\n\nStrategic growth for modern healthcare practices. Tap below to see how we help with strategy, operations and growth, how the Health Check works, and how to reach us.",
+      "About RS", CFG.aboutUrl);
     return buttons(to, "Ready to see how your practice is doing? It takes about 5 minutes.", [{ id: "START", title: "Start Health Check" }, { id: "REVIEWS", title: "What doctors say" }]);
   }
   if (id === "REVIEWS" || id === "TESTIMONIALS") {
-    if (CFG.reviewsUrl) await ctaUrl(to, "Here's what doctors we work with say about RS Medical Consultancy ⭐", "Read reviews", CFG.reviewsUrl);
-    else await text(to, "Here's what doctors we work with say about RS Medical Consultancy ⭐\n\n(Our Google reviews link will appear here.)");
-    return buttons(to, "Ready to see how your practice is doing?", [{ id: "START", title: "Start Health Check" }, { id: "BROCHURE", title: "View our brochure" }]);
+    await reviews(to);
+    return buttons(to, "Ready to see how your practice is doing?", [{ id: "START", title: "Start Health Check" }, { id: "BROCHURE", title: "About RS" }]);
   }
 
   const [kind, t, ans = "", x, y] = id.split("|");
@@ -371,3 +387,4 @@ module.exports = async function handler(req, res) {
 };
 
 module.exports._handle = handle; // for tests
+module.exports._send = send;
