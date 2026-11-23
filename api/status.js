@@ -36,8 +36,9 @@ module.exports = async function handler(req, res) {
       const G = "https://graph.facebook.com/v21.0";
       const auth = { Authorization: `Bearer ${token.trim()}` };
       let wabas = q.waba ? [String(q.waba).replace(/\D/g, "")] : [];
+      const d = await (await fetch(`${G}/debug_token?input_token=${encodeURIComponent(token.trim())}`, { headers: auth })).json();
+      const tokenApp = d.data && d.data.app_id ? String(d.data.app_id) : "";
       if (!wabas.length) {
-        const d = await (await fetch(`${G}/debug_token?input_token=${encodeURIComponent(token.trim())}`, { headers: auth })).json();
         const scopes = (d.data && d.data.granular_scopes) || [];
         wabas = [...new Set(scopes.filter(x => /whatsapp_business_(management|messaging)/.test(x.scope)).flatMap(x => x.target_ids || []))];
       }
@@ -55,9 +56,24 @@ module.exports = async function handler(req, res) {
           const j = await r.json();
           items.push(row(r.ok && j.success, "Subscribe the account to the app", r.ok ? "Done" : (j.error && j.error.message) || `HTTP ${r.status}`));
         }
+        // Point this WhatsApp account's webhooks straight at the bot, whatever the app-level webhook setting says.
+        const botUrl = `https://${req.headers["x-forwarded-host"] || req.headers.host || "rs-health-check.vercel.app"}/api/whatsapp`;
+        if (q.fix === "direct") {
+          const body = new URLSearchParams({ override_callback_uri: botUrl, verify_token: (process.env.WA_VERIFY_TOKEN || "").trim() });
+          const r = await fetch(`${G}/${found}/subscribed_apps`, { method: "POST", headers: { ...auth, "Content-Type": "application/x-www-form-urlencoded" }, body });
+          const j = await r.json();
+          items.push(row(r.ok && j.success, "Send messages straight to the bot", r.ok ? "Done. Now send Hi again" : (j.error && (j.error.error_user_msg || j.error.message)) || `HTTP ${r.status}`));
+        }
         const sa = await (await fetch(`${G}/${found}/subscribed_apps`, { headers: auth })).json();
         const n = (sa.data || []).length;
         items.push(row(n > 0, "WhatsApp account is linked to the app", sa.error ? sa.error.message : n ? `Account …${found.slice(-4)}, ${n} app(s) subscribed` : `Account …${found.slice(-4)} has no app subscribed, so Meta won't forward messages`));
+        for (const a of sa.data || []) {
+          const info = a.whatsapp_business_api_data || a;
+          const same = !tokenApp || String(info.id) === tokenApp;
+          items.push(row(same, `Linked app: ${esc(info.name || "?")}`, `app …${String(info.id || "").slice(-4)}${tokenApp ? (same ? " (same app as the token)" : `, but the token is from app …${tokenApp.slice(-4)}`) : ""}`));
+          if (a.override_callback_uri) items.push(row(a.override_callback_uri === botUrl, "Messages are sent straight to", esc(a.override_callback_uri)));
+        }
+        if (n && !(sa.data || []).some(a => a.override_callback_uri === botUrl)) fixForm = `<form method="get"><input type="hidden" name="k" value="${esc(q.k)}"><input type="hidden" name="waba" value="${esc(found)}"><input type="hidden" name="fix" value="direct"><button style="background:#0fb9b1;border:0;border-radius:999px;padding:14px 22px;font-size:16px;font-weight:600">Fix: send messages straight to the bot</button></form>`;
         if (!n) fixForm = `<form method="get"><input type="hidden" name="k" value="${esc(q.k)}"><input type="hidden" name="waba" value="${esc(found)}"><input type="hidden" name="fix" value="subscribe"><button style="background:#0fb9b1;border:0;border-radius:999px;padding:14px 22px;font-size:16px;font-weight:600">Fix: link account to app</button></form>`;
       }
     } catch (e) { items.push(row(false, "Couldn't check the account link", e.message)); }
