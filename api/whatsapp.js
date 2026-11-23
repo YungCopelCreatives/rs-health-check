@@ -343,6 +343,7 @@ module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
 
   const raw = await rawBody(req);
+  await store.set("diag:hit", { at: new Date().toISOString(), bytes: raw.length, signed: Boolean(req.headers["x-hub-signature-256"]) });
   const secret = process.env.WA_APP_SECRET;
   if (secret) {
     const sig = req.headers["x-hub-signature-256"] || "";
