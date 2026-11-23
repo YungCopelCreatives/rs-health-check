@@ -25,13 +25,23 @@ const QUESTIONS = S.DOMAINS.flatMap(d => d.questions.map(q => ({ ...q, domain: d
 async function send(to, payload) {
   const token = process.env.WA_TOKEN;
   const phoneId = process.env.WA_PHONE_NUMBER_ID;
-  if (!token || !phoneId) { console.log("WA not configured; would send:", JSON.stringify(payload).slice(0, 300)); return; }
+  if (!token || !phoneId) {
+    console.log("WA not configured; would send:", JSON.stringify(payload).slice(0, 300));
+    await store.set("diag:sendError", { at: new Date().toISOString(), status: 0, error: "WA_TOKEN or WA_PHONE_NUMBER_ID missing" });
+    return;
+  }
   const r = await fetch(`${GRAPH}/${phoneId}/messages`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ messaging_product: "whatsapp", recipient_type: "individual", to, ...payload }),
   });
-  if (!r.ok) console.error("WA send failed", r.status, (await r.text()).slice(0, 500));
+  if (!r.ok) {
+    const err = (await r.text()).slice(0, 500);
+    console.error("WA send failed", r.status, err);
+    await store.set("diag:sendError", { at: new Date().toISOString(), status: r.status, error: err });
+  } else {
+    await store.set("diag:sendOk", { at: new Date().toISOString() });
+  }
 }
 
 const text = (to, body) => send(to, { type: "text", text: { body, preview_url: true } });
@@ -347,6 +357,7 @@ module.exports = async function handler(req, res) {
     for (const entry of body.entry || []) {
       for (const change of entry.changes || []) {
         const v = change.value || {};
+        await store.set("diag:webhook", { at: new Date().toISOString(), field: change.field, messages: (v.messages || []).length, statuses: (v.statuses || []).length, phoneNumberId: (v.metadata || {}).phone_number_id || "" });
         const names = Object.fromEntries((v.contacts || []).map(c => [c.wa_id, c.profile && c.profile.name]));
         for (const msg of v.messages || []) await handle(msg, names[msg.from]);
       }
